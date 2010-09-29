@@ -1,0 +1,5 @@
+name = Views Index Hint
+description = Allow index hints to be added to a Views query through the Views UI
+core = 6.x
+dependencies[] = views
+package = Views

@@ -1,0 +1,88 @@
+<?php
+
+/**
+ * Implement hook_views_pre_execute().
+ */
+function views_indexhint_views_pre_execute(&$view) {
+  if ($index = $view->display_handler->get_option('index_hint')) {
+    $query = &$view->build_info['query'];
+    $search = 'FROM {'. $view->base_table .'} '. $view->base_table;
+    $replace = $search .' '. $index;
+    $query = str_replace($search, $replace, $query);
+  }
+}
+
+
+/**
+ * Implement hook_form_alter().
+ * Add Lite pager option to Views UI
+ */
+function views_indexhint_form_alter(&$form, &$form_state, $form_id) {
+  if ($form_id == 'views_ui_edit_display_form' && $form_state['section'] == 'index_hint') {
+    $view = &$form_state['view'];
+    $display_id = $form_state['display_id'];
+    $display = &$view->display[$display_id];
+    $form['#title'] .= t('Index Hints');
+    /*
+     $form['summary'] = array(
+      '#type' => 'markup',
+      '#value' => t('<p><strong>MySQL ONLY:</strong> In some situations, MySQL may not choose the best index for a query. If a query is performing poorly an index hint may help the MySQL optimizer choose the best index.</p>'),
+    );
+    */
+    $form['index_hint'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Index Hint'),
+      '#description' => t('Add an index hint according to <a href="@link">MySQL specifications</a>', array('@link' => 'http://dev.mysql.com/doc/refman/5.1/en/index-hints.html')),
+      '#default_value' => $display->handler->get_option('index_hint'),
+      '#weight' => -10,
+    );
+    $form['buttons']['submit']['#submit'][] = 'views_indexhint_display_form_submit';
+  }
+}
+
+/**
+ * Callback to save the Index Hint form field
+ */
+function views_indexhint_display_form_submit($form, &$form_state) {
+  $view = &$form_state['view'];
+  // The handler was unset previously so we need to set it again
+  $view->set_display($form_state['display_id']);
+  $display = &$view->display[$form_state['display_id']];
+  $display->handler->set_option('index_hint', $form_state['values']['index_hint']);
+  views_ui_cache_set($form_state['view']);
+}
+
+/**
+ * Implement module_preprocess_hook().
+ * Add Index Hint to the View Edit UI
+ */
+function views_indexhint_preprocess_views_ui_edit_tab(&$vars) {
+  $id = 'index_hint';
+  $view = $vars['view'];
+  $display = $vars['display'];
+  $data = array();
+  $title = $display->handler->get_option('index_hint') ? t('Yes') : t('No');
+  $data['content'] = t('Index Hint') .': '. $display->handler->option_link($title, $id, '', t('Specify index hints for query tables'));
+  $data['links'] = '';
+  $data['overridden'] = FALSE;
+  $data['defaulted'] = FALSE;
+  $data['class'] = '';
+  if (!empty($display->handler->options['defaults'][$id])) {
+    $display_id = 'default';
+    $data['defaulted'] = TRUE;
+  }
+  else {
+    $display_id = $display->id;
+    if (!$display->handler->is_default_display()) {
+      if ($display->handler->defaultable_sections($id)) {
+        $data['overridden'] = TRUE;
+      }
+    }
+  }
+  $data['class'] = views_ui_item_css($display_id . '-' . $id);
+  if (!empty($view->changed_sections[$display_id . '-' . $id])) {
+    $data['changed'] = TRUE;
+  }
+  
+  $vars['categories']['basic']['data']['index_hint'] = $data;
+}
