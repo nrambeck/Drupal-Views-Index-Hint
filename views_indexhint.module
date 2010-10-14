@@ -37,6 +37,17 @@ function views_indexhint_form_alter(&$form, &$form_state, $form_id) {
       '#weight' => -10,
     );
     $form['buttons']['submit']['#submit'][] = 'views_indexhint_display_form_submit';
+    $form['buttons']['submit']['#validate'][] = 'views_indexhint_display_form_validate';
+  }
+}
+
+/**
+ * Callback to validate the Index Hint form field
+ */
+function views_indexhint_display_form_validate($form, &$form_state) {
+  // As a precaution, don't allow malicious characters or keywords to be used
+  if (preg_match('/UNION|SELECT|UPDATE|INSERT|DELETE|[;\\G]/i', $form_state['values']['index_hint'], $matches)) {
+    form_error($form['index_hint'], 'Index hint contains illegal characters');
   }
 }
 
