@@ -21,14 +21,12 @@ function views_indexhint_form_alter(&$form, &$form_state, $form_id) {
   if ($form_id == 'views_ui_edit_display_form' && $form_state['section'] == 'index_hint') {
     $view = &$form_state['view'];
     $display_id = $form_state['display_id'];
+    $view->set_display($display_id);
     $display = &$view->display[$display_id];
+    $display->handler->add_override_button($form, $form_state, $form_state['section']);
+    
+    $form['override']['#weight'] = -99;
     $form['#title'] .= t('Index Hints');
-    /*
-     $form['summary'] = array(
-      '#type' => 'markup',
-      '#value' => t('<p><strong>MySQL ONLY:</strong> In some situations, MySQL may not choose the best index for a query. If a query is performing poorly an index hint may help the MySQL optimizer choose the best index.</p>'),
-    );
-    */
     $form['index_hint'] = array(
       '#type' => 'textfield',
       '#title' => t('Index Hint'),
@@ -37,6 +35,17 @@ function views_indexhint_form_alter(&$form, &$form_state, $form_id) {
       '#weight' => -10,
     );
     $form['buttons']['submit']['#submit'][] = 'views_indexhint_display_form_submit';
+    //$form['buttons']['submit']['#validate'][] = 'views_indexhint_display_form_validate';
+  }
+}
+
+/**
+ * Callback to save the Index Hint form field
+ */
+function views_indexhint_display_form_validate($form, &$form_state) {
+  // As a precaution, don't allow malicious characters or keywords to be used
+  if (preg_match('/UNION|SELECT|UPDATE|INSERT|DELETE|[;\\G]/i', $form_state['values']['index_hint'], $matches)) {
+    form_error($form['index_hint'], 'Index hint contains illegal characters');
   }
 }
 
