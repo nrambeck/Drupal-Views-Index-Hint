@@ -40,7 +40,7 @@ function views_indexhint_form_alter(&$form, &$form_state, $form_id) {
 }
 
 /**
- * Callback to save the Index Hint form field
+ * Callback to validate the Index Hint form field
  */
 function views_indexhint_display_form_validate($form, &$form_state) {
   // As a precaution, don't allow malicious characters or keywords to be used
